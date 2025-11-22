@@ -1,0 +1,982 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Crypto Wallet</title>
+    <script src="https://telegram.org/js/telegram-web-app.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            color: #333;
+        }
+
+        .container {
+            max-width: 400px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+
+        .header {
+            text-align: center;
+            margin-bottom: 30px;
+            color: white;
+        }
+
+        .header h1 {
+            font-size: 24px;
+            margin-bottom: 5px;
+        }
+
+        .header p {
+            opacity: 0.8;
+        }
+
+        .card {
+            background: white;
+            border-radius: 20px;
+            padding: 20px;
+            margin-bottom: 20px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+        }
+
+        .balance-card {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            text-align: center;
+        }
+
+        .balance-amount {
+            font-size: 32px;
+            font-weight: bold;
+            margin: 10px 0;
+        }
+
+        .balance-change {
+            font-size: 14px;
+            opacity: 0.8;
+        }
+
+        .menu-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 15px;
+            margin: 20px 0;
+        }
+
+        .menu-item {
+            background: #f8f9fa;
+            border-radius: 15px;
+            padding: 20px;
+            text-align: center;
+            border: 2px solid transparent;
+            transition: all 0.3s ease;
+            cursor: pointer;
+        }
+
+        .menu-item:hover {
+            border-color: #667eea;
+            transform: translateY(-2px);
+        }
+
+        .menu-icon {
+            font-size: 24px;
+            margin-bottom: 10px;
+        }
+
+        .menu-text {
+            font-weight: 600;
+            font-size: 14px;
+        }
+
+        .currency-list {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+
+        .currency-item {
+            display: flex;
+            align-items: center;
+            padding: 15px;
+            background: #f8f9fa;
+            border-radius: 15px;
+            transition: all 0.3s ease;
+            cursor: pointer;
+        }
+
+        .currency-item:hover {
+            background: #e9ecef;
+        }
+
+        .currency-icon {
+            width: 40px;
+            height: 40px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-right: 15px;
+            color: white;
+            font-weight: bold;
+        }
+
+        .currency-info {
+            flex: 1;
+        }
+
+        .currency-name {
+            font-weight: 600;
+            margin-bottom: 5px;
+        }
+
+        .currency-amount {
+            font-size: 14px;
+            color: #666;
+        }
+
+        .currency-price {
+            text-align: right;
+        }
+
+        .currency-value {
+            font-weight: 600;
+            margin-bottom: 5px;
+        }
+
+        .currency-change {
+            font-size: 12px;
+            color: #28a745;
+        }
+
+        .currency-change.negative {
+            color: #dc3545;
+        }
+
+        .tab-bar {
+            display: flex;
+            background: white;
+            border-radius: 15px;
+            padding: 5px;
+            margin: 20px 0;
+        }
+
+        .tab {
+            flex: 1;
+            text-align: center;
+            padding: 12px;
+            border-radius: 12px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-weight: 600;
+        }
+
+        .tab.active {
+            background: #667eea;
+            color: white;
+        }
+
+        .transaction-item {
+            display: flex;
+            align-items: center;
+            padding: 15px;
+            border-bottom: 1px solid #eee;
+        }
+
+        .transaction-icon {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-right: 15px;
+            font-size: 18px;
+        }
+
+        .transaction-icon.deposit {
+            background: #d4edda;
+            color: #155724;
+        }
+
+        .transaction-icon.withdraw {
+            background: #f8d7da;
+            color: #721c24;
+        }
+
+        .transaction-details {
+            flex: 1;
+        }
+
+        .transaction-type {
+            font-weight: 600;
+            margin-bottom: 5px;
+        }
+
+        .transaction-date {
+            font-size: 12px;
+            color: #666;
+        }
+
+        .transaction-amount {
+            font-weight: 600;
+            text-align: right;
+        }
+
+        .btn {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            padding: 15px 20px;
+            border-radius: 15px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            width: 100%;
+            transition: all 0.3s ease;
+        }
+
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(0,0,0,0.2);
+        }
+
+        .btn-secondary {
+            background: #6c757d;
+        }
+
+        .deposit-address {
+            background: #f8f9fa;
+            padding: 15px;
+            border-radius: 10px;
+            margin: 15px 0;
+            word-break: break-all;
+            font-family: monospace;
+            font-size: 14px;
+            border: 1px solid #dee2e6;
+        }
+
+        .loading {
+            text-align: center;
+            padding: 20px;
+            color: #666;
+        }
+
+        .notification {
+            position: fixed;
+            top: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: #28a745;
+            color: white;
+            padding: 12px 20px;
+            border-radius: 10px;
+            z-index: 1000;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.2);
+        }
+
+        input, select {
+            width: 100%;
+            padding: 15px;
+            border: 1px solid #ddd;
+            border-radius: 10px;
+            margin-bottom: 15px;
+            font-size: 16px;
+        }
+
+        input:focus, select:focus {
+            outline: none;
+            border-color: #667eea;
+            box-shadow: 0 0 0 2px rgba(102, 126, 234, 0.25);
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <!-- Header -->
+        <div class="header">
+            <h1>Crypto Wallet</h1>
+            <p>Безопасное хранение и переводы</p>
+        </div>
+
+        <!-- Balance Card -->
+        <div class="card balance-card">
+            <div class="balance-amount" id="totalBalance">$0.00</div>
+            <div class="balance-change" id="balanceChange">+0.00% за сутки</div>
+        </div>
+
+        <!-- Quick Actions -->
+        <div class="card">
+            <div class="menu-grid">
+                <div class="menu-item" onclick="showDeposit()">
+                    <div class="menu-icon">📥</div>
+                    <div class="menu-text">Пополнить</div>
+                </div>
+                <div class="menu-item" onclick="showWithdraw()">
+                    <div class="menu-icon">📤</div>
+                    <div class="menu-text">Вывести</div>
+                </div>
+                <div class="menu-item" onclick="showExchange()">
+                    <div class="menu-icon">🔄</div>
+                    <div class="menu-text">Обменять</div>
+                </div>
+                <div class="menu-item" onclick="showHistory()">
+                    <div class="menu-icon">📋</div>
+                    <div class="menu-text">История</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Portfolio -->
+        <div class="card">
+            <h3 style="margin-bottom: 15px;">Мой портфель</h3>
+            <div class="currency-list" id="portfolioList">
+                <div class="loading">Загрузка...</div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const tg = window.Telegram.WebApp;
+        tg.expand();
+        tg.BackButton.hide();
+
+        const BACKEND_URL = 'http://localhost:3000';
+        let userData = null;
+        let currentScreen = 'main';
+
+        // Initialize app
+        async function initApp() {
+            try {
+                const user = tg.initDataUnsafe?.user;
+                if (!user) {
+                    showError('Ошибка загрузки данных Telegram');
+                    return;
+                }
+
+                showLoading('Загрузка данных...');
+                const response = await fetch(`${BACKEND_URL}/api/user/${user.id}`);
+                userData = await response.json();
+                
+                await updateBalance();
+                await loadPortfolio();
+                hideLoading();
+                
+            } catch (error) {
+                console.error('Init error:', error);
+                showError('Ошибка загрузки данных');
+            }
+        }
+
+        // Update balance display
+        async function updateBalance() {
+            if (!userData) return;
+            
+            const balanceResponse = await fetch(`${BACKEND_URL}/api/balance/${userData.id}`);
+            const balanceData = await balanceResponse.json();
+            
+            document.getElementById('totalBalance').textContent = `$${balanceData.total_usd.toFixed(2)}`;
+            
+            // Mock 24h change
+            const change = (Math.random() * 6 - 3).toFixed(2);
+            const changeElement = document.getElementById('balanceChange');
+            changeElement.textContent = `${change >= 0 ? '+' : ''}${change}% за сутки`;
+            changeElement.style.color = change >= 0 ? '#90EE90' : '#FF6B6B';
+        }
+
+        // Load portfolio
+        async function loadPortfolio() {
+            if (!userData) return;
+            
+            const portfolioList = document.getElementById('portfolioList');
+            portfolioList.innerHTML = '';
+            
+            const ratesResponse = await fetch(`${BACKEND_URL}/api/rates`);
+            const rates = await ratesResponse.json();
+            
+            Object.entries(userData.balances).forEach(([currency, amount]) => {
+                if (amount > 0) {
+                    const usdValue = amount * rates[currency];
+                    const change = (Math.random() * 10 - 5).toFixed(2);
+                    
+                    const item = document.createElement('div');
+                    item.className = 'currency-item';
+                    item.onclick = () => showCurrencyDetails(currency);
+                    
+                    item.innerHTML = `
+                        <div class="currency-icon">${getCurrencySymbol(currency)}</div>
+                        <div class="currency-info">
+                            <div class="currency-name">${currency}</div>
+                            <div class="currency-amount">${amount} ${currency}</div>
+                        </div>
+                        <div class="currency-price">
+                            <div class="currency-value">$${usdValue.toFixed(2)}</div>
+                            <div class="currency-change ${change < 0 ? 'negative' : ''}">
+                                ${change >= 0 ? '+' : ''}${change}%
+                            </div>
+                        </div>
+                    `;
+                    
+                    portfolioList.appendChild(item);
+                }
+            });
+
+            // Если нет активных валют
+            if (portfolioList.children.length === 0) {
+                portfolioList.innerHTML = '<div class="loading">Нет активных балансов</div>';
+            }
+        }
+
+        // Show deposit screen
+        async function showDeposit() {
+            currentScreen = 'deposit';
+            const currencies = ['BTC', 'ETH', 'TON', 'USDT', 'BNB', 'SOL', 'XMR'];
+            
+            document.querySelector('.container').innerHTML = `
+                <div class="header">
+                    <h1>Пополнение счета</h1>
+                    <p>Выберите валюту для пополнения</p>
+                </div>
+                <div class="card">
+                    <div class="currency-list" id="depositList"></div>
+                </div>
+            `;
+            
+            const depositList = document.getElementById('depositList');
+            
+            currencies.forEach(currency => {
+                const item = document.createElement('div');
+                item.className = 'currency-item';
+                item.onclick = () => generateDepositAddress(currency);
+                
+                item.innerHTML = `
+                    <div class="currency-icon">${getCurrencySymbol(currency)}</div>
+                    <div class="currency-info">
+                        <div class="currency-name">${currency}</div>
+                        <div class="currency-amount">${userData.balances[currency] || 0} ${currency}</div>
+                    </div>
+                    <div style="color: #667eea;">→</div>
+                `;
+                
+                depositList.appendChild(item);
+            });
+            
+            setupBackButton();
+        }
+
+        // Generate deposit address
+        async function generateDepositAddress(currency) {
+            try {
+                showLoading('Генерация адреса...');
+                const response = await fetch(`${BACKEND_URL}/api/deposit/${currency}`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ userId: userData.id })
+                });
+                
+                const data = await response.json();
+                hideLoading();
+                
+                document.querySelector('.container').innerHTML = `
+                    <div class="header">
+                        <h1>Пополнение ${currency}</h1>
+                        <p>Отправьте ${currency} на этот адрес</p>
+                    </div>
+                    <div class="card">
+                        <p><strong>Адрес для пополнения:</strong></p>
+                        <div class="deposit-address">${data.address}</div>
+                        ${data.memo ? `
+                            <p><strong>MEMO (обязательно):</strong></p>
+                            <div class="deposit-address">${data.memo}</div>
+                        ` : ''}
+                        <button class="btn" onclick="copyToClipboard('${data.address}')">
+                            📋 Копировать адрес
+                        </button>
+                        <button class="btn btn-secondary" onclick="showDeposit()" style="margin-top: 10px;">
+                            ◀️ Назад к выбору валюты
+                        </button>
+                        <p style="margin-top: 15px; font-size: 12px; color: #666;">
+                            ⚠️ Отправляйте только ${currency} на этот адрес<br>
+                            ⏱️ Зачисление после 1-3 подтверждений сети<br>
+                            💰 Минимальный депозит: ${getMinDeposit(currency)} ${currency}
+                        </p>
+                    </div>
+                `;
+            } catch (error) {
+                hideLoading();
+                showError('Ошибка генерации адреса');
+            }
+        }
+
+        // Show withdraw screen
+        function showWithdraw() {
+            currentScreen = 'withdraw';
+            document.querySelector('.container').innerHTML = `
+                <div class="header">
+                    <h1>Вывод средств</h1>
+                    <p>Выберите валюту для вывода</p>
+                </div>
+                <div class="card">
+                    <div class="currency-list" id="withdrawList"></div>
+                </div>
+            `;
+            
+            const withdrawList = document.getElementById('withdrawList');
+            let hasBalances = false;
+            
+            Object.entries(userData.balances).forEach(([currency, amount]) => {
+                if (amount > 0) {
+                    hasBalances = true;
+                    const item = document.createElement('div');
+                    item.className = 'currency-item';
+                    item.onclick = () => startWithdraw(currency);
+                    
+                    item.innerHTML = `
+                        <div class="currency-icon">${getCurrencySymbol(currency)}</div>
+                        <div class="currency-info">
+                            <div class="currency-name">${currency}</div>
+                            <div class="currency-amount">Доступно: ${amount}</div>
+                        </div>
+                        <div style="color: #667eea;">→</div>
+                    `;
+                    
+                    withdrawList.appendChild(item);
+                }
+            });
+
+            if (!hasBalances) {
+                withdrawList.innerHTML = `
+                    <div class="loading">Нет средств для вывода</div>
+                    <button class="btn" onclick="showDeposit()" style="margin-top: 15px;">
+                        📥 Пополнить счет
+                    </button>
+                `;
+            }
+            
+            setupBackButton();
+        }
+
+        // Start withdraw process
+        function startWithdraw(currency) {
+            document.querySelector('.container').innerHTML = `
+                <div class="header">
+                    <h1>Вывод ${currency}</h1>
+                    <p>Введите данные для вывода</p>
+                </div>
+                <div class="card">
+                    <input type="text" id="withdrawAddress" placeholder="Адрес получателя" 
+                           style="width: 100%; padding: 15px; border: 1px solid #ddd; border-radius: 10px; margin-bottom: 15px;">
+                    <input type="number" id="withdrawAmount" placeholder="Сумма" step="0.000001" max="${userData.balances[currency]}"
+                           style="width: 100%; padding: 15px; border: 1px solid #ddd; border-radius: 10px; margin-bottom: 15px;">
+                    <button class="btn" onclick="processWithdraw('${currency}')">
+                        Подтвердить вывод
+                    </button>
+                    <button class="btn btn-secondary" onclick="showWithdraw()" style="margin-top: 10px;">
+                        ◀️ Назад к выбору валюты
+                    </button>
+                    <p style="margin-top: 15px; font-size: 12px; color: #666;">
+                        💰 Доступно: ${userData.balances[currency]} ${currency}<br>
+                        📊 Комиссия сети: ${getWithdrawFee(currency)} ${currency}<br>
+                        ⚠️ Минимальный вывод: ${getMinWithdraw(currency)} ${currency}
+                    </p>
+                </div>
+            `;
+        }
+
+        // Process withdraw
+        async function processWithdraw(currency) {
+            const address = document.getElementById('withdrawAddress').value;
+            const amount = parseFloat(document.getElementById('withdrawAmount').value);
+            
+            if (!address || !amount) {
+                showNotification('Заполните все поля', 'error');
+                return;
+            }
+            
+            if (amount > userData.balances[currency]) {
+                showNotification('Недостаточно средств', 'error');
+                return;
+            }
+
+            const minWithdraw = getMinWithdraw(currency);
+            if (amount < minWithdraw) {
+                showNotification(`Минимальная сумма вывода: ${minWithdraw} ${currency}`, 'error');
+                return;
+            }
+            
+            try {
+                showLoading('Обработка вывода...');
+                const response = await fetch(`${BACKEND_URL}/api/withdraw`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        userId: userData.id,
+                        currency,
+                        amount,
+                        address
+                    })
+                });
+                
+                const data = await response.json();
+                hideLoading();
+                
+                if (data.success) {
+                    showNotification('✅ Запрос на вывод принят в обработку', 'success');
+                    setTimeout(() => {
+                        location.reload();
+                    }, 2000);
+                } else {
+                    showNotification('❌ Ошибка: ' + data.error, 'error');
+                }
+            } catch (error) {
+                hideLoading();
+                showNotification('Ошибка сети', 'error');
+            }
+        }
+
+        // Show exchange screen
+        function showExchange() {
+            currentScreen = 'exchange';
+            document.querySelector('.container').innerHTML = `
+                <div class="header">
+                    <h1>Обмен валют</h1>
+                    <p>Быстрый обмен между валютами</p>
+                </div>
+                <div class="card">
+                    <div style="margin-bottom: 15px;">
+                        <label>Отдаю:</label>
+                        <select id="fromCurrency" onchange="updateExchangeRate()" style="width: 100%; padding: 15px; border: 1px solid #ddd; border-radius: 10px; margin-bottom: 15px;">
+                            ${Object.keys(userData.balances).map(currency => 
+                                `<option value="${currency}">${currency} (доступно: ${userData.balances[currency]})</option>`
+                            ).join('')}
+                        </select>
+                        <input type="number" id="fromAmount" placeholder="0.00" oninput="calculateToAmount()"
+                               style="width: 100%; padding: 15px; border: 1px solid #ddd; border-radius: 10px;">
+                    </div>
+                    
+                    <div style="text-align: center; margin: 20px 0; font-size: 24px;">🔄</div>
+                    
+                    <div style="margin-bottom: 15px;">
+                        <label>Получаю:</label>
+                        <select id="toCurrency" onchange="updateExchangeRate()" style="width: 100%; padding: 15px; border: 1px solid #ddd; border-radius: 10px; margin-bottom: 15px;">
+                            ${Object.keys(userData.balances).map(currency => 
+                                `<option value="${currency}">${currency}</option>`
+                            ).join('')}
+                        </select>
+                        <input type="number" id="toAmount" placeholder="0.00" readonly
+                               style="width: 100%; padding: 15px; border: 1px solid #ddd; border-radius: 10px; background: #f8f9fa;">
+                    </div>
+                    
+                    <button class="btn" onclick="processExchange()">
+                        Обменять
+                    </button>
+                    <button class="btn btn-secondary" onclick="initApp()" style="margin-top: 10px;">
+                        ◀️ Назад в главное меню
+                    </button>
+                    
+                    <div id="exchangeRate" style="margin-top: 15px; text-align: center; color: #666;"></div>
+                    <div id="exchangeFee" style="margin-top: 5px; text-align: center; font-size: 12px; color: #999;"></div>
+                </div>
+            `;
+            
+            updateExchangeRate();
+            setupBackButton();
+        }
+
+        // Update exchange rate
+        async function updateExchangeRate() {
+            const fromCurrency = document.getElementById('fromCurrency').value;
+            const toCurrency = document.getElementById('toCurrency').value;
+            
+            const ratesResponse = await fetch(`${BACKEND_URL}/api/rates`);
+            const rates = await ratesResponse.json();
+            
+            const rate = rates[fromCurrency] / rates[toCurrency];
+            const fee = rate * 0.01; // 1% fee
+            const finalRate = rate - fee;
+            
+            document.getElementById('exchangeRate').innerHTML = 
+                `💱 Курс: 1 ${fromCurrency} = ${finalRate.toFixed(6)} ${toCurrency}`;
+            document.getElementById('exchangeFee').textContent = 
+                `📊 Включая комиссию 1%`;
+        }
+
+        // Calculate to amount
+        async function calculateToAmount() {
+            const fromCurrency = document.getElementById('fromCurrency').value;
+            const toCurrency = document.getElementById('toCurrency').value;
+            const fromAmount = parseFloat(document.getElementById('fromAmount').value) || 0;
+            
+            const ratesResponse = await fetch(`${BACKEND_URL}/api/rates`);
+            const rates = await ratesResponse.json();
+            
+            const rate = rates[fromCurrency] / rates[toCurrency];
+            const fee = rate * 0.01;
+            const finalRate = rate - fee;
+            
+            const toAmount = fromAmount * finalRate;
+            document.getElementById('toAmount').value = toAmount.toFixed(6);
+        }
+
+        // Process exchange
+        async function processExchange() {
+            const fromCurrency = document.getElementById('fromCurrency').value;
+            const toCurrency = document.getElementById('toCurrency').value;
+            const fromAmount = parseFloat(document.getElementById('fromAmount').value) || 0;
+            
+            if (fromAmount <= 0) {
+                showNotification('Введите сумму для обмена', 'error');
+                return;
+            }
+            
+            if (fromAmount > userData.balances[fromCurrency]) {
+                showNotification('Недостаточно средств', 'error');
+                return;
+            }
+            
+            // Simulate exchange
+            showNotification('🔄 Обмен выполнен успешно!', 'success');
+            setTimeout(() => {
+                location.reload();
+            }, 2000);
+        }
+
+        // Show transaction history
+        async function showHistory() {
+            currentScreen = 'history';
+            try {
+                showLoading('Загрузка истории...');
+                const response = await fetch(`${BACKEND_URL}/api/transactions/${userData.id}`);
+                const transactions = await response.json();
+                hideLoading();
+                
+                document.querySelector('.container').innerHTML = `
+                    <div class="header">
+                        <h1>История операций</h1>
+                        <p>Все ваши транзакции</p>
+                    </div>
+                    <div class="card">
+                        <div class="tab-bar">
+                            <div class="tab active" onclick="switchTab('all')">Все</div>
+                            <div class="tab" onclick="switchTab('deposit')">Пополнения</div>
+                            <div class="tab" onclick="switchTab('withdraw')">Выводы</div>
+                        </div>
+                        <div id="transactionsList">
+                            ${transactions.length === 0 ? 
+                                '<div class="loading">Нет транзакций</div>' : 
+                                transactions.map(tx => `
+                                    <div class="transaction-item">
+                                        <div class="transaction-icon ${tx.type}">
+                                            ${tx.type === 'deposit' ? '📥' : '📤'}
+                                        </div>
+                                        <div class="transaction-details">
+                                            <div class="transaction-type">
+                                                ${tx.type === 'deposit' ? 'Пополнение' : 'Вывод'} ${tx.currency}
+                                            </div>
+                                            <div class="transaction-date">
+                                                ${new Date(tx.timestamp).toLocaleDateString('ru-RU')} ${new Date(tx.timestamp).toLocaleTimeString('ru-RU')}
+                                            </div>
+                                            ${tx.hash ? `<div class="transaction-date" style="font-family: monospace; font-size: 10px;">${tx.hash}</div>` : ''}
+                                        </div>
+                                        <div class="transaction-amount" style="color: ${tx.type === 'deposit' ? '#28a745' : '#dc3545'}">
+                                            ${tx.type === 'deposit' ? '+' : '-'}${tx.amount} ${tx.currency}
+                                        </div>
+                                    </div>
+                                `).join('')
+                            }
+                        </div>
+                        <button class="btn btn-secondary" onclick="initApp()" style="margin-top: 15px;">
+                            ◀️ Назад в главное меню
+                        </button>
+                    </div>
+                `;
+                
+                setupBackButton();
+            } catch (error) {
+                hideLoading();
+                showError('Ошибка загрузки истории');
+            }
+        }
+
+        // Show currency details
+        function showCurrencyDetails(currency) {
+            currentScreen = 'currency';
+            const rate = getCurrencyRate(currency);
+            
+            document.querySelector('.container').innerHTML = `
+                <div class="header">
+                    <h1>${currency} Детали</h1>
+                    <p>Информация о валюте</p>
+                </div>
+                <div class="card">
+                    <div style="text-align: center; margin-bottom: 20px;">
+                        <div class="currency-icon" style="margin: 0 auto 15px auto; width: 60px; height: 60px; font-size: 20px;">
+                            ${getCurrencySymbol(currency)}
+                        </div>
+                        <div style="font-size: 24px; font-weight: bold;">${currency}</div>
+                        <div style="color: #666;">${getCurrencyName(currency)}</div>
+                    </div>
+                    
+                    <div style="background: #f8f9fa; padding: 15px; border-radius: 10px; margin-bottom: 15px;">
+                        <div style="display: flex; justify-content: space-between; margin-bottom: 10px;">
+                            <span>Ваш баланс:</span>
+                            <span><strong>${userData.balances[currency]} ${currency}</strong></span>
+                        </div>
+                        <div style="display: flex; justify-content: space-between; margin-bottom: 10px;">
+                            <span>В долларах:</span>
+                            <span><strong>$${(userData.balances[currency] * rate).toFixed(2)}</strong></span>
+                        </div>
+                        <div style="display: flex; justify-content: space-between;">
+                            <span>Текущий курс:</span>
+                            <span><strong>$${rate.toLocaleString()}</strong></span>
+                        </div>
+                    </div>
+                    
+                    <button class="btn" onclick="showDeposit()" style="margin-bottom: 10px;">
+                        📥 Пополнить ${currency}
+                    </button>
+                    <button class="btn" onclick="startWithdraw('${currency}')" style="margin-bottom: 10px;">
+                        📤 Вывести ${currency}
+                    </button>
+                    <button class="btn btn-secondary" onclick="initApp()">
+                        ◀️ Назад в портфель
+                    </button>
+                </div>
+            `;
+            
+            setupBackButton();
+        }
+
+        // Helper functions
+        function getCurrencySymbol(currency) {
+            const symbols = {
+                BTC: '₿', ETH: 'Ξ', TON: 'T', USDT: 'U', 
+                BNB: 'B', SOL: 'S', XMR: 'M'
+            };
+            return symbols[currency] || currency.charAt(0);
+        }
+
+        function getCurrencyName(currency) {
+            const names = {
+                BTC: 'Bitcoin', ETH: 'Ethereum', TON: 'TON Coin', USDT: 'Tether',
+                BNB: 'Binance Coin', SOL: 'Solana', XMR: 'Monero'
+            };
+            return names[currency] || currency;
+        }
+
+        function getCurrencyRate(currency) {
+            const rates = {
+                BTC: 45000, ETH: 2500, TON: 2.5, USDT: 1,
+                BNB: 350, SOL: 100, XMR: 160
+            };
+            return rates[currency] || 1;
+        }
+
+        function getWithdrawFee(currency) {
+            const fees = {
+                BTC: 0.0005, ETH: 0.005, TON: 0.1, USDT: 1,
+                BNB: 0.001, SOL: 0.01, XMR: 0.01
+            };
+            return fees[currency] || 0.01;
+        }
+
+        function getMinDeposit(currency) {
+            const mins = {
+                BTC: 0.0001, ETH: 0.001, TON: 0.1, USDT: 10,
+                BNB: 0.01, SOL: 0.1, XMR: 0.01
+            };
+            return mins[currency] || 0.01;
+        }
+
+        function getMinWithdraw(currency) {
+            const mins = {
+                BTC: 0.0002, ETH: 0.002, TON: 0.2, USDT: 20,
+                BNB: 0.02, SOL: 0.2, XMR: 0.02
+            };
+            return mins[currency] || 0.02;
+        }
+
+        // Copy to clipboard
+        async function copyToClipboard(text) {
+            try {
+                await navigator.clipboard.writeText(text);
+                showNotification('📋 Адрес скопирован!', 'success');
+            } catch (error) {
+                showNotification('❌ Ошибка копирования', 'error');
+            }
+        }
+
+        // UI helpers
+        function showLoading(message = 'Загрузка...') {
+            document.body.innerHTML += `
+                <div class="loading" style="position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); background: white; padding: 30px; border-radius: 15px; box-shadow: 0 10px 30px rgba(0,0,0,0.3); z-index: 1000;">
+                    ${message}
+                </div>
+            `;
+        }
+
+        function hideLoading() {
+            const loading = document.querySelector('.loading');
+            if (loading) loading.remove();
+        }
+
+        function showNotification(message, type = 'info') {
+            const notification = document.createElement('div');
+            notification.className = 'notification';
+            notification.style.background = type === 'success' ? '#28a745' : type === 'error' ? '#dc3545' : '#17a2b8';
+            notification.textContent = message;
+            
+            document.body.appendChild(notification);
+            
+            setTimeout(() => {
+                notification.remove();
+            }, 3000);
+        }
+
+        function showError(message) {
+            document.body.innerHTML = `
+                <div class="container">
+                    <div class="header">
+                        <h1>Ошибка</h1>
+                        <p>${message}</p>
+                    </div>
+                    <div class="card">
+                        <button class="btn" onclick="location.reload()">
+                            🔄 Попробовать снова
+                        </button>
+                    </div>
+                </div>
+            `;
+        }
+
+        function setupBackButton() {
+            tg.BackButton.show();
+            tg.BackButton.onClick(() => {
+                if (currentScreen === 'deposit' || currentScreen === 'withdraw' || currentScreen === 'exchange' || currentScreen === 'history') {
+                    initApp();
+                }
+            });
+        }
+
+        function switchTab(tab) {
+            // Implementation for tab switching in history
+            const tabs = document.querySelectorAll('.tab');
+            tabs.forEach(t => t.classList.remove('active'));
+            event.target.classList.add('active');
+            // In a real app, you would filter transactions here
+        }
+
+        // Initialize app when loaded
+        document.addEventListener('DOMContentLoaded', initApp);
+    </script>
+</body>
+                                                           </html>
