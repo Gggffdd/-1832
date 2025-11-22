@@ -1,0 +1,183 @@
+const express = require('express');
+const cors = require('cors');
+const bodyParser = require('body-parser');
+const axios = require('axios');
+const { v4: uuidv4 } = require('uuid');
+require('dotenv').config();
+
+const app = express();
+const PORT = process.env.PORT || 3000;
+
+// Middleware
+app.use(cors());
+app.use(bodyParser.json());
+
+// Mock database
+let users = {};
+let transactions = {};
+let wallets = {};
+
+// API Routes
+app.get('/api/user/:userId', (req, res) => {
+  const userId = req.params.userId;
+  const user = users[userId] || createNewUser(userId);
+  res.json(user);
+});
+
+app.get('/api/balance/:userId', (req, res) => {
+  const userId = req.params.userId;
+  const user = users[userId];
+  
+  if (!user) {
+    return res.status(404).json({ error: 'User not found' });
+  }
+  
+  res.json({
+    balances: user.balances,
+    total_usd: calculateTotalUSD(user.balances)
+  });
+});
+
+app.post('/api/deposit/:currency', (req, res) => {
+  const { userId } = req.body;
+  const currency = req.params.currency;
+  
+  const walletAddress = generateWalletAddress(currency);
+  const user = getUser(userId);
+  
+  user.wallets[currency] = walletAddress;
+  
+  res.json({
+    success: true,
+    address: walletAddress,
+    currency: currency,
+    memo: currency === 'XMR' ? generateMemo() : undefined
+  });
+});
+
+app.post('/api/withdraw', (req, res) => {
+  const { userId, currency, amount, address } = req.body;
+  const user = getUser(userId);
+  
+  // Validate balance
+  if (user.balances[currency] < amount) {
+    return res.json({ 
+      success: false, 
+      error: 'Insufficient balance' 
+    });
+  }
+  
+  // Create withdrawal transaction
+  const txId = uuidv4();
+  const transaction = {
+    id: txId,
+    userId,
+    type: 'withdraw',
+    currency,
+    amount,
+    address,
+    status: 'pending',
+    timestamp: new Date().toISOString(),
+    hash: `0x${generateRandomHash()}`
+  };
+  
+  transactions[txId] = transaction;
+  
+  // Simulate processing
+  setTimeout(() => {
+    transactions[txId].status = 'completed';
+    user.balances[currency] -= amount;
+  }, 5000);
+  
+  res.json({
+    success: true,
+    transactionId: txId,
+    status: 'pending'
+  });
+});
+
+app.get('/api/transactions/:userId', (req, res) => {
+  const userId = req.params.userId;
+  const userTransactions = Object.values(transactions)
+    .filter(tx => tx.userId === userId)
+    .sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
+  
+  res.json(userTransactions);
+});
+
+app.get('/api/rates', async (req, res) => {
+  // Mock exchange rates
+  const rates = {
+    BTC: 45000,
+    ETH: 2500,
+    TON: 2.5,
+    USDT: 1,
+    BNB: 350,
+    SOL: 100,
+    XMR: 160
+  };
+  
+  res.json(rates);
+});
+
+// Helper functions
+function createNewUser(userId) {
+  const user = {
+    id: userId,
+    username: `user_${userId}`,
+    balances: {
+      BTC: 0.005,
+      ETH: 0.1,
+      TON: 50,
+      USDT: 100,
+      BNB: 0.5,
+      SOL: 2,
+      XMR: 0.5
+    },
+    wallets: {},
+    joined: new Date().toISOString()
+  };
+  
+  users[userId] = user;
+  return user;
+}
+
+function getUser(userId) {
+  if (!users[userId]) {
+    createNewUser(userId);
+  }
+  return users[userId];
+}
+
+function generateWalletAddress(currency) {
+  const prefixes = {
+    BTC: '1',
+    ETH: '0x',
+    TON: 'UQ',
+    BNB: 'bnb',
+    SOL: 'So1',
+    XMR: '4'
+  };
+  
+  const prefix = prefixes[currency] || '';
+  const randomPart = Math.random().toString(36).substring(2, 15);
+  return prefix + randomPart.toUpperCase() + '...' + Math.random().toString(36).substring(2, 6);
+}
+
+function generateRandomHash() {
+  return Math.random().toString(36).substring(2, 15) + Math.random().toString(36).substring(2, 15);
+}
+
+function calculateTotalUSD(balances) {
+  const rates = {
+    BTC: 45000, ETH: 2500, TON: 2.5, USDT: 1, BNB: 350, SOL: 100, XMR: 160
+  };
+  
+  return Object.entries(balances).reduce((total, [currency, amount]) => {
+    return total + (amount * (rates[currency] || 0));
+  }, 0);
+}
+
+app.listen(PORT, () => {
+  console.log(`🚀 Server running on port ${PORT}`);
+});
